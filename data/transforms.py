@@ -91,7 +91,7 @@ class Resize(object):
 
     def __call__(self, image, target=None, mask=None):
         if self.random_size:
-            size = random.choice([640, 672, 704, 736, 768, 800])
+            size = random.choice([256, 288, 320, 352, 384, 416, 448, 480, 512, 544, 576, 608])
         else:
             size = self.size
 

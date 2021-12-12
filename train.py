@@ -335,7 +335,7 @@ def build_dataset(args, device):
         max_size = int(round(1333 / 800 * args.img_size))
         dataset = VOCDetection(
                         data_dir=data_dir,
-                        transform=TrainTransforms(args.img_size, max_size=max_size))
+                        transform=TrainTransforms(args.img_size, max_size=max_size, random_size=args.multi_scale))
 
         evaluator = VOCAPIEvaluator(
                         data_dir=data_dir,
@@ -349,7 +349,7 @@ def build_dataset(args, device):
         dataset = COCODataset(
                     data_dir=data_dir,
                     image_set='train2017',
-                    transform=TrainTransforms(args.img_size, max_size=max_size))
+                    transform=TrainTransforms(args.img_size, max_size=max_size, random_size=args.multi_scale))
 
         evaluator = COCOAPIEvaluator(
                         data_dir=data_dir,

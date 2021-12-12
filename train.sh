@@ -3,7 +3,8 @@ python train.py \
         -d coco \
         -v fcos_rt_r50_fpn_C5_1x \
         --batch_size 16 \
-        --img_size 512 \
+        --img_size 608 \
         --lr 0.01 \
         --wp_iter 500 \
-        --accumulate 1
+        --accumulate 1 \
+        -ms

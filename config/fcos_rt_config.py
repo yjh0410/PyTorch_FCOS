@@ -16,7 +16,6 @@ fcos_rt_config = {
         'lr_epoch': [8, 11],
         # matcher
         'scale_range': [(0, 64), (64, 128), (128, 1e10)],
-        'negative_igt': 0.3
     },
     # 1x
     'fcos_rt_r101_fpn_C5_1x': {
