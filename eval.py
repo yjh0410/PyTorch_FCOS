@@ -17,7 +17,7 @@ from models.fcos_rt import FCOS_RT
 def parse_args():
     parser = argparse.ArgumentParser(description='FCOS_RT Detection')
     # basic
-    parser.add_argument('-size', '--img_size', default=512, type=int,
+    parser.add_argument('-size', '--min_size', default=512, type=int,
                         help='the min size of input image')
     parser.add_argument('--cuda', action='store_true', default=False,
                         help='Use cuda')
@@ -43,17 +43,17 @@ def parse_args():
 
 
 
-def voc_test(model, data_dir, device, img_size):
+def voc_test(model, data_dir, device, min_size):
     evaluator = VOCAPIEvaluator(data_root=data_dir,
                                 device=device,
-                                transform=ValTransforms(img_size),
+                                transform=ValTransforms(min_size, max_size=736),
                                 display=True)
 
     # VOC evaluation
     evaluator.evaluate(model)
 
 
-def coco_test(model, data_dir, device, img_size, test=False):
+def coco_test(model, data_dir, device, min_size, test=False):
     if test:
         # test-dev
         print('test on test-dev 2017')
@@ -61,7 +61,7 @@ def coco_test(model, data_dir, device, img_size, test=False):
                         data_dir=data_dir,
                         device=device,
                         testset=True,
-                        transform=ValTransforms(img_size))
+                        transform=ValTransforms(min_size, max_size=736))
 
     else:
         # eval
@@ -69,7 +69,7 @@ def coco_test(model, data_dir, device, img_size, test=False):
                         data_dir=data_dir,
                         device=device,
                         testset=False,
-                        transform=ValTransforms(img_size))
+                        transform=ValTransforms(min_size, max_size=736))
 
     # COCO evaluation
     evaluator.evaluate(model)
@@ -126,8 +126,8 @@ if __name__ == '__main__':
     # evaluation
     with torch.no_grad():
         if args.dataset == 'voc':
-            voc_test(model, data_dir, device, args.img_size)
+            voc_test(model, data_dir, device, args.min_size)
         elif args.dataset == 'coco-val':
-            coco_test(model, data_dir, device, args.img_size, test=False)
+            coco_test(model, data_dir, device, args.min_size, test=False)
         elif args.dataset == 'coco-test':
-            coco_test(model, data_dir, device, args.img_size, test=True)
+            coco_test(model, data_dir, device, args.min_size, test=True)

@@ -65,9 +65,9 @@ class FCOS_RT(nn.Module):
                 if hasattr(m, 'bias') and m.bias is not None:
                     nn.init.constant_(m.bias, 0)
 
-            if isinstance(m, (nn.GroupNorm, nn.BatchNorm2d, nn.SyncBatchNorm)):
-                nn.init.constant_(m.weight, 1)
-                nn.init.constant_(m.bias, 0)
+            # if isinstance(m, (nn.GroupNorm, nn.BatchNorm2d, nn.SyncBatchNorm)):
+            #     nn.init.constant_(m.weight, 1)
+            #     nn.init.constant_(m.bias, 0)
                 
         # init bias of cls_head
         init_prob = 0.01
@@ -182,8 +182,8 @@ class FCOS_RT(nn.Module):
             anchor_xy_i = anchor_xy_i.to(self.device)
 
             ## decode box
-            x1y1_pred_i = anchor_xy_i - reg_pred_i[..., :2].exp()
-            x2y2_pred_i = anchor_xy_i + reg_pred_i[..., 2:].exp()
+            x1y1_pred_i = anchor_xy_i - reg_pred_i[..., :2].relu()
+            x2y2_pred_i = anchor_xy_i + reg_pred_i[..., 2:].relu()
             box_pred_i = torch.cat([x1y1_pred_i, x2y2_pred_i], dim=-1)
             # rescale
             box_pred_i = box_pred_i * self.stride[i]
@@ -267,8 +267,8 @@ class FCOS_RT(nn.Module):
                 anchor_xy_i = anchor_xy_i.unsqueeze(0).to(self.device)
 
                 ## decode box
-                x1y1_pred_i = anchor_xy_i - reg_pred_i[..., :2].exp()
-                x2y2_pred_i = anchor_xy_i + reg_pred_i[..., 2:].exp()
+                x1y1_pred_i = anchor_xy_i - reg_pred_i[..., :2].relu()
+                x2y2_pred_i = anchor_xy_i + reg_pred_i[..., 2:].relu()
                 box_pred_i = torch.cat([x1y1_pred_i, x2y2_pred_i], dim=-1)
 
                 outputs["pred_cls"].append(cls_pred_i.view(B, -1, self.num_classes))

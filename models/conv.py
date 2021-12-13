@@ -2,7 +2,7 @@ import torch.nn as nn
 
 
 class Conv(nn.Module):
-    def __init__(self, c1, c2, k=1, p=0, s=1, d=1, g=1, norm='BN', act=True, bias=False):
+    def __init__(self, c1, c2, k=1, p=0, s=1, d=1, g=1, norm='BN', act=True, bias=True):
         super(Conv, self).__init__()
         if norm == 'BN':
             if act:

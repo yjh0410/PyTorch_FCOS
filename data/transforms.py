@@ -152,13 +152,13 @@ class TrainTransforms(object):
 
 # ValTransform
 class ValTransforms(object):
-    def __init__(self, size=512, mean=(0.485, 0.456, 0.406), std=(0.229, 0.224, 0.225)):
+    def __init__(self, size=512, max_size=736, mean=(0.485, 0.456, 0.406), std=(0.229, 0.224, 0.225)):
         self.size = size
         self.mean = mean
         self.std = std
         self.transforms = Compose([
             ToTensor(),
-            Resize(size),
+            Resize(size=size, max_size=max_size),
             Normalize(mean, std)
         ])
 

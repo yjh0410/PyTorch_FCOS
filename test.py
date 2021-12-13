@@ -19,7 +19,7 @@ def parse_args():
     parser = argparse.ArgumentParser(description='FCOS_RT Detection')
 
     # basic
-    parser.add_argument('-size', '--img_size', default=512, type=int,
+    parser.add_argument('-size', '--min_size', default=512, type=int,
                         help='the shorter size of input image')
     parser.add_argument('--show', action='store_true', default=False,
                         help='show the visulization results.')
@@ -218,7 +218,7 @@ if __name__ == '__main__':
         net=model, 
         device=device, 
         dataset=dataset,
-        transforms=ValTransforms(args.img_size),
+        transforms=ValTransforms(min=args.min_size, max_size=736),
         vis_thresh=args.visual_threshold,
         class_colors=class_colors,
         class_names=class_names,
