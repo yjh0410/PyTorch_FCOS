@@ -20,7 +20,7 @@ def parse_args():
 
     # basic
     parser.add_argument('-size', '--img_size', default=512, type=int,
-                        help='the min size of input image')
+                        help='the shorter size of input image')
     parser.add_argument('--show', action='store_true', default=False,
                         help='show the visulization results.')
     parser.add_argument('-vs', '--visual_threshold', default=0.35, type=float,
