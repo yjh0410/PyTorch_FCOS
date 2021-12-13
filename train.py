@@ -13,7 +13,7 @@ from torch.nn.parallel import DistributedDataParallel as DDP
 
 from data.voc import VOCDetection
 from data.coco import COCODataset
-from config.fcos_rt_config import fcos_rt_config
+from config.fcos_config import fcos_config
 from data.transforms import TrainTransforms, ValTransforms
 
 from utils import distributed_utils
@@ -25,14 +25,16 @@ from utils.vis import vis_data
 from evaluator.coco_evaluator import COCOAPIEvaluator
 from evaluator.voc_evaluator import VOCAPIEvaluator
 
-from models.fcos_rt import build_model
+from models.fcos import build_model
 
 
 def parse_args():
-    parser = argparse.ArgumentParser(description='FCOS-RT Detection')
+    parser = argparse.ArgumentParser(description='FCOS Detection')
     # basic
     parser.add_argument('--cuda', action='store_true', default=False,
                         help='use cuda.')
+    parser.add_argument('--img_size', type=int, default=800,
+                        help='The shorter size of the input image')
     parser.add_argument('--batch_size', default=16, type=int, 
                         help='Batch size for training')
     parser.add_argument('--lr', type=float, default=0.01,
@@ -49,16 +51,6 @@ def parse_args():
                         help='use tensorboard')
     parser.add_argument('--save_folder', default='weights/', type=str, 
                         help='Gamma update for SGD')
-
-    # input image size
-    parser.add_argument('--train_min_size', type=int, default=512,
-                        help='The shorter size of the input image')
-    parser.add_argument('--train_max_size', type=int, default=900,
-                        help='The shorter size of the input image')
-    parser.add_argument('--val_min_size', type=int, default=512,
-                        help='The shorter size of the input image')
-    parser.add_argument('--val_max_size', type=int, default=736,
-                        help='The shorter size of the input image')
                         
     # visualize
     parser.add_argument('--vis_data', action='store_true', default=False,
@@ -68,8 +60,8 @@ def parse_args():
     parser.add_argument('--vis_anchors', action='store_true', default=False,
                         help='visualize anchor boxes.')
     # model
-    parser.add_argument('-v', '--version', default='fcos_rt_r50_fpn_C5_1x',
-                        help='fcos_rt_r50_fpn_C5_1x, fcos_rt_r101_fpn_C5_1x')
+    parser.add_argument('-v', '--version', default='fcos_r50_fpn_C5_1x',
+                        help='fcos_r50_fpn_C5_1x, fcos_r101_fpn_C5_1x')
     parser.add_argument('--norm', default='BN', type=str,
                         help='normalization layer')
     parser.add_argument('--conf_thresh', default=0.05, type=float,
@@ -139,7 +131,7 @@ def train():
 
     # FCOS-RT Config
     print('Model: ', args.version)
-    cfg = fcos_rt_config[args.version]
+    cfg = fcos_config[args.version]
 
     # dataset and evaluator
     dataset, evaluator, num_classes = build_dataset(args, device)
@@ -167,7 +159,7 @@ def train():
     if local_rank == 0:
         model.trainable = False
         model.eval()
-        FLOPs_and_Params(model=model, size=args.train_min_size, device=device)
+        FLOPs_and_Params(model=model, size=args.img_size, device=device)
         model.trainable = True
         model.train()
 
@@ -339,34 +331,33 @@ def build_dataset(args, device):
     if args.dataset == 'voc':
         data_dir = os.path.join(args.root, 'VOCdevkit')
         num_classes = 20
+        max_size = int(round(1333 / 800 * args.img_size))
         dataset = VOCDetection(
                         data_dir=data_dir,
-                        transform=TrainTransforms(size=args.train_min_size, 
-                                                  max_size=args.train_max_size, 
+                        transform=TrainTransforms(size=args.img_size, 
+                                                  max_size=max_size,
                                                   random_size=args.multi_scale))
 
         evaluator = VOCAPIEvaluator(
                         data_dir=data_dir,
                         device=device,
-                        transform=ValTransforms(size=args.val_min_size, 
-                                                max_size=args.val_max_size))
+                        transform=ValTransforms(size=args.img_size))
 
     elif args.dataset == 'coco':
         data_dir = os.path.join(args.root, 'COCO')
         num_classes = 80
-        max_size = int(round(736 / 512 * args.train_min_size))
+        max_size = int(round(1333 / 800 * args.img_size))
         dataset = COCODataset(
                     data_dir=data_dir,
                     image_set='train2017',
-                    transform=TrainTransforms(size=args.train_min_size, 
-                                              max_size=args.train_max_size, 
+                    transform=TrainTransforms(size=args.img_size, 
+                                              max_size=max_size,
                                               random_size=args.multi_scale))
 
         evaluator = COCOAPIEvaluator(
                         data_dir=data_dir,
                         device=device,
-                        transform=ValTransforms(size=args.val_min_size, 
-                                                max_size=args.val_max_size))
+                        transform=ValTransforms(size=args.img_size))
     
     else:
         print('unknow dataset !! Only support voc and coco !!')

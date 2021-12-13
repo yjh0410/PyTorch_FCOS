@@ -3,7 +3,9 @@ from thop import profile
 
 
 def FLOPs_and_Params(model, size, device):
-    x = torch.randn(1, 3, size, size).to(device)
+    min_size = size
+    max_size = int(round(1333 / 800 * size))
+    x = torch.randn(1, 3, min_size, max_size).to(device)
 
     flops, params = profile(model, inputs=(x, ))
     print('FLOPs : ', flops / 1e9, ' B')

@@ -91,19 +91,16 @@ def build_backbone(model_name='resnet18', pretrained=False, train_backbone=True,
         backbone = Backbone(model_name, pretrained, train_backbone, return_interm_layers, dilation=False)
         if return_interm_layers:
             feature_channels = [backbone.num_channels//4, backbone.num_channels//2, backbone.num_channels]
-            output_stride = [8, 16, 32]
         else:
             feature_channels = backbone.num_channels
-            output_stride = [32]
 
-    return backbone, feature_channels, output_stride
+    return backbone, feature_channels
 
 
 if __name__ == '__main__':
-    model, feature_channels, output_stride = build_backbone(model_name='resnet18', pretrained=True, return_interm_layers=True)
+    model, feature_channels = build_backbone(model_name='resnet18', pretrained=True, return_interm_layers=True)
     print(model)
     print(feature_channels)
-    print(output_stride)
 
     x = torch.randn(2, 3, 224, 224)
     y = model(x)

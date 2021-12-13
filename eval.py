@@ -7,23 +7,23 @@ from evaluator.voc_evaluator import VOCAPIEvaluator
 from evaluator.coco_evaluator import COCOAPIEvaluator
 
 from data.transforms import ValTransforms
-from config.fcos_rt_config import fcos_rt_config
+from config.fcos_config import fcos_config
 
 from utils.misc import TestTimeAugmentation
 
-from models.fcos_rt import FCOS_RT
+from models.fcos import FCOS
 
 
 def parse_args():
-    parser = argparse.ArgumentParser(description='FCOS_RT Detection')
+    parser = argparse.ArgumentParser(description='FCOS Detection')
     # basic
     parser.add_argument('-size', '--min_size', default=512, type=int,
                         help='the min size of input image')
     parser.add_argument('--cuda', action='store_true', default=False,
                         help='Use cuda')
     # model
-    parser.add_argument('-v', '--version', default='fcos_rt_r50_fpn_C5_1x',
-                        help='fcos_rt_r50_fpn_C5_1x, fcos_rt_r101_fpn_C5_1x')
+    parser.add_argument('-v', '--version', default='fcos_r50_fpn_C5_1x',
+                        help='fcos_r50_fpn_C5_1x, fcos_r101_fpn_C5_1x')
     parser.add_argument('--weight', default='weight/',
                         type=str, help='Trained state_dict file path to open')
     parser.add_argument('--conf_thresh', default=0.05, type=float,
@@ -105,15 +105,15 @@ if __name__ == '__main__':
 
     # FCOS-RT config
     print('Model: ', args.version)
-    cfg = fcos_rt_config[args.version]
+    cfg = fcos_config[args.version]
 
     # build model
-    model = FCOS_RT(cfg=cfg,
-                    device=device,
-                    num_classes=num_classes,
-                    trainable=False,
-                    conf_thresh=args.conf_thresh,
-                    nms_thresh=args.nms_thresh)
+    model = FCOS(cfg=cfg,
+                 device=device,
+                 num_classes=num_classes,
+                 trainable=False,
+                 conf_thresh=args.conf_thresh,
+                 nms_thresh=args.nms_thresh)
 
     # load weight
     model.load_state_dict(torch.load(args.weight, map_location=device), strict=False)

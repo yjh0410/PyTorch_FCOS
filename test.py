@@ -6,20 +6,20 @@ import numpy as np
 import torch
 import torch.backends.cudnn as cudnn
 
-from config.fcos_rt_config import fcos_rt_config
+from config.fcos_config import fcos_config
 from data.voc import VOC_CLASSES, VOCDetection
 from data.coco import coco_class_index, coco_class_labels, COCODataset
 from data.transforms import ValTransforms
 from utils.misc import TestTimeAugmentation
 
-from models.fcos_rt import FCOS_RT
+from models.fcos import FCOS
 
 
 def parse_args():
-    parser = argparse.ArgumentParser(description='FCOS_RT Detection')
+    parser = argparse.ArgumentParser(description='FCOS Detection')
 
     # basic
-    parser.add_argument('-size', '--min_size', default=512, type=int,
+    parser.add_argument('-size', '--img_size', default=800, type=int,
                         help='the shorter size of input image')
     parser.add_argument('--show', action='store_true', default=False,
                         help='show the visulization results.')
@@ -30,8 +30,8 @@ def parse_args():
     parser.add_argument('--save_folder', default='det_results/', type=str,
                         help='Dir to save results')
     # model
-    parser.add_argument('-v', '--version', default='fcos_rt_r50_fpn_C5_1x',
-                        help='fcos_rt_r50_fpn_C5_1x, fcos_rt_r101_fpn_C5_1x')
+    parser.add_argument('-v', '--version', default='fcos_r50_fpn_C5_1x',
+                        help='fcos_r50_fpn_C5_1x, fcos_r101_fpn_C5_1x')
     parser.add_argument('--weight', default='weight/',
                         type=str, help='Trained state_dict file path to open')
     parser.add_argument('--conf_thresh', default=0.1, type=float,
@@ -195,15 +195,15 @@ if __name__ == '__main__':
 
     # FCOS-RT config
     print('Model: ', args.version)
-    cfg = fcos_rt_config[args.version]
+    cfg = fcos_config[args.version]
 
     # build model
-    model = FCOS_RT(cfg=cfg,
-                    device=device,
-                    num_classes=num_classes,
-                    trainable=False,
-                    conf_thresh=args.conf_thresh,
-                    nms_thresh=args.nms_thresh)
+    model = FCOS(cfg=cfg,
+                 device=device,
+                 num_classes=num_classes,
+                 trainable=False,
+                 conf_thresh=args.conf_thresh,
+                 nms_thresh=args.nms_thresh)
 
     # load weight
     model.load_state_dict(torch.load(args.weight, map_location=device), strict=False)
@@ -218,7 +218,7 @@ if __name__ == '__main__':
         net=model, 
         device=device, 
         dataset=dataset,
-        transforms=ValTransforms(min=args.min_size, max_size=736),
+        transforms=ValTransforms(args.img_size),
         vis_thresh=args.visual_threshold,
         class_colors=class_colors,
         class_names=class_names,

@@ -6,7 +6,7 @@ from .resnet import build_backbone
 from .fpn import build_fpn
 
 
-class FCOS_RT(nn.Module):
+class FCOS(nn.Module):
     def __init__(self, 
                  cfg,
                  device, 
@@ -15,20 +15,20 @@ class FCOS_RT(nn.Module):
                  nms_thresh = 0.6,
                  trainable = False, 
                  norm = 'BN'):
-        super(FCOS_RT, self).__init__()
+        super(FCOS, self).__init__()
         self.device = device
         self.fmp_size = None
         self.num_classes = num_classes
         self.trainable = trainable
         self.conf_thresh = conf_thresh
         self.nms_thresh = nms_thresh
+        self.stride = [8, 16, 32, 64, 128]
 
         # backbone
-        self.backbone, feature_channels, self.stride = build_backbone(
-                                                            model_name=cfg['backbone'],
-                                                            pretrained=trainable,
-                                                            train_backbone=True,
-                                                            return_interm_layers=True)
+        self.backbone, feature_channels = build_backbone(model_name=cfg['backbone'],
+                                                         pretrained=trainable,
+                                                         train_backbone=True,
+                                                         return_interm_layers=True)
 
         # neck
         self.neck = build_fpn(model_name=cfg['fpn'], in_channels=feature_channels, out_channel=cfg['head_dims'])
@@ -232,7 +232,7 @@ class FCOS_RT(nn.Module):
             # backbone: C3, C4, C5
             x = self.backbone(image)
 
-            # neck: P3, P4, P5
+            # neck: P3, P4, P5, P6, P7
             features = self.neck(x)
 
             outputs = {
@@ -244,6 +244,7 @@ class FCOS_RT(nn.Module):
                 "strides": []
             }
             # head
+            print(len(features))
             for i, p in enumerate(features):
                 fmp_h_i, fmp_w_i = p.shape[-2:]
                 cls_feat_i = self.cls_feat(p)
@@ -295,7 +296,7 @@ class FCOS_RT(nn.Module):
 
 # build FCOS detector
 def build_model(args, cfg, device, num_classes=80, trainable=False):
-    model = FCOS_RT(cfg=cfg,
+    model = FCOS(cfg=cfg,
                     device=device,
                     num_classes=num_classes,
                     trainable=trainable,
