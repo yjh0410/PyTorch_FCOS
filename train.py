@@ -35,7 +35,7 @@ def parse_args():
                         help='use cuda.')
     parser.add_argument('--batch_size', default=16, type=int, 
                         help='Batch size for training')
-    parser.add_argument('--img_size', type=int, default=800,
+    parser.add_argument('--img_size', type=int, default=512,
                         help='The shorter size of the input image')
     parser.add_argument('--lr', type=float, default=0.01,
                         help='Learning rate')
@@ -158,10 +158,10 @@ def train():
 
     # compute FLOPs and Params
     if local_rank == 0:
-        model.post_process = True
+        model.trainable = False
         model.eval()
         FLOPs_and_Params(model=model, size=args.img_size, device=device)
-        model.post_process = False
+        model.trainable = True
         model.train()
 
     # DDP

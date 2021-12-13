@@ -10,12 +10,11 @@ class FCOS_RT(nn.Module):
     def __init__(self, 
                  cfg,
                  device, 
-                 num_classes=20, 
+                 num_classes = 20, 
                  conf_thresh = 0.05,
                  nms_thresh = 0.6,
-                 trainable=False, 
-                 norm='BN',
-                 post_process=False):
+                 trainable = False, 
+                 norm = 'BN'):
         super(FCOS_RT, self).__init__()
         self.device = device
         self.fmp_size = None
@@ -23,7 +22,6 @@ class FCOS_RT(nn.Module):
         self.trainable = trainable
         self.conf_thresh = conf_thresh
         self.nms_thresh = nms_thresh
-        self.post_process = post_process
 
         # backbone
         self.backbone, feature_channels, self.stride = build_backbone(
@@ -33,7 +31,7 @@ class FCOS_RT(nn.Module):
                                                             return_interm_layers=True)
 
         # neck
-        self.neck = build_fpn(model_name=cfg['fpn'], in_channels=feature_channels, out_channel=256)
+        self.neck = build_fpn(model_name=cfg['fpn'], in_channels=feature_channels, out_channel=cfg['head_dims'])
 
         # head
         self.cls_feat = nn.Sequential(
@@ -143,14 +141,14 @@ class FCOS_RT(nn.Module):
         return bboxes, scores, cls_inds
 
 
-    def forward(self, image, masks=None):
+    @torch.no_grad()
+    def inference_single_image(self, x):
         """
-            image: (tensor) [B, 3, H, W]
-            mask: (tensor) [B, H, W]
+            image: (tensor) [1, 3, H, W]
         """
-        B, _, img_h, img_w = image.size()
+        img_h, img_w = x.shape[-2:]
         # backbone: C3, C4, C5
-        x = self.backbone(image)
+        x = self.backbone(x)
 
         # neck: P3, P4, P5
         features = self.neck(x)
@@ -158,10 +156,7 @@ class FCOS_RT(nn.Module):
         outputs = {
             "pred_cls": [],
             "pred_box": [],
-            "pred_ctn": [],
-            "masks": [],
-            "fmp_size": [],
-            "strides": []
+            "pred_ctn": []
         }
         # head
         for i, p in enumerate(features):
@@ -173,67 +168,132 @@ class FCOS_RT(nn.Module):
             reg_pred_i = self.reg_pred(reg_feat_i)
             ctn_pred_i = self.ctn_pred(reg_feat_i)
 
-            # [B, C, H, W] -> [B, H, W, C]
-            cls_pred_i = cls_pred_i.permute(0, 2, 3, 1).contiguous()
-            reg_pred_i = reg_pred_i.permute(0, 2, 3, 1).contiguous()
-            ctn_pred_i = ctn_pred_i.permute(0, 2, 3, 1).contiguous()
+            # [1, C, H, W] -> [H, W, C]
+            cls_pred_i = cls_pred_i.permute(0, 2, 3, 1).contiguous()[0]
+            reg_pred_i = reg_pred_i.permute(0, 2, 3, 1).contiguous()[0]
+            ctn_pred_i = ctn_pred_i.permute(0, 2, 3, 1).contiguous()[0]
         
             # decode box
             ## generate grid cells
             anchor_y_i, anchor_x_i = torch.meshgrid([torch.arange(fmp_h_i), torch.arange(fmp_w_i)])
             # [H, W, 2]
             anchor_xy_i = torch.stack([anchor_x_i, anchor_y_i], dim=-1).float() + 0.5
-            # [H, W, 2] -> [1, H, W, 2]
-            anchor_xy_i = anchor_xy_i.unsqueeze(0).to(self.device)
+            # [H, W, 2] -> [H, W, 2]
+            anchor_xy_i = anchor_xy_i.to(self.device)
 
             ## decode box
             x1y1_pred_i = anchor_xy_i - reg_pred_i[..., :2].exp()
             x2y2_pred_i = anchor_xy_i + reg_pred_i[..., 2:].exp()
             box_pred_i = torch.cat([x1y1_pred_i, x2y2_pred_i], dim=-1)
+            # rescale
+            box_pred_i = box_pred_i * self.stride[i]
 
-            outputs["pred_cls"].append(cls_pred_i.view(B, -1, self.num_classes))
-            outputs["pred_box"].append(box_pred_i.view(B, -1, 4))
-            outputs["pred_ctn"].append(ctn_pred_i.view(B, -1, 1))
-            outputs["fmp_size"].append([fmp_h_i, fmp_w_i])
-            outputs["strides"].append(self.stride[i])
+            # [H, W, C] -> [HW, C]
+            outputs["pred_cls"].append(cls_pred_i.view(-1, self.num_classes))
+            outputs["pred_box"].append(box_pred_i.view(-1, 4))
+            outputs["pred_ctn"].append(ctn_pred_i.view(-1, 1))
 
-            # mask
-            if masks is not None:
-                # [B, H, W]
-                resized_masks = torch.nn.functional.interpolate(masks[None], size=[fmp_h_i, fmp_w_i]).bool()[0]
-                # [B, HW]
-                resized_masks = resized_masks.flatten(1)
-                outputs["masks"].append(resized_masks)
+        outputs["pred_cls"] = torch.cat(outputs["pred_cls"], dim=0)  # [HW, C]
+        outputs["pred_box"] = torch.cat(outputs["pred_box"], dim=0)  # [HW, 4]
+        outputs["pred_ctn"] = torch.cat(outputs["pred_ctn"], dim=0)  # [HW, 1]
 
-        outputs["pred_cls"] = torch.cat(outputs["pred_cls"], dim=1)  # [B, HW, C]
-        outputs["pred_box"] = torch.cat(outputs["pred_box"], dim=1)  # [B, HW, 4]
-        outputs["pred_ctn"] = torch.cat(outputs["pred_ctn"], dim=1)  # [B, HW, 1]
-        outputs["masks"] = torch.cat(outputs["masks"], dim=1) if outputs["masks"] else []      # [B, HW, 1]
+        # score = sqrt(cls * ctn)
+        scores = torch.sqrt(outputs["pred_cls"].sigmoid() * \
+                            outputs["pred_ctn"].sigmoid()).view(-1, self.num_classes) # [HW, C]
 
-        if not self.post_process:
-            return outputs
+        # normalize bbox
+        bboxes = outputs["pred_box"].view(-1, 4) # [HW, 4]
+        bboxes[..., [0, 2]] /= img_w
+        bboxes[..., [1, 3]] /= img_h
+        bboxes = bboxes.clamp(0., 1.)
+
+        # to cpu
+        scores = scores.cpu().numpy()
+        bboxes = bboxes.cpu().numpy()
+
+        # post-process
+        bboxes, scores, cls_inds = self.postprocess(bboxes, scores)
+
+        return bboxes, scores, cls_inds
+
+
+    def forward(self, image, masks=None):
+        """
+            image: (tensor) [B, 3, H, W]
+            mask: (tensor) [B, H, W]
+        """
+        if not self.trainable:
+            # inference
+            bboxes, scores, cls_inds = self.inference_single_image(image)
+            return bboxes, scores, cls_inds
+
         else:
-            with torch.no_grad():
-                # score = sqrt(cls * ctn)
-                scores = torch.sqrt(outputs["pred_cls"].sigmoid() * \
-                                    outputs["pred_ctn"].sigmoid())[0].view(-1, self.num_classes) # [HW, C]
-                bboxes = outputs["pred_box"][0].view(-1, 4) # [HW, 4]
+            B = image.size(0)
+            # backbone: C3, C4, C5
+            x = self.backbone(image)
 
-                # normalize bbox
-                bboxes[..., [0, 2]] /= img_w
-                bboxes[..., [1, 3]] /= img_h
-                bboxes = bboxes.clamp(0., 1.)
+            # neck: P3, P4, P5
+            features = self.neck(x)
 
-                # to cpu
-                scores = scores.cpu().numpy()
-                bboxes = bboxes.cpu().numpy()
+            outputs = {
+                "pred_cls": [],
+                "pred_box": [],
+                "pred_ctn": [],
+                "masks": [],
+                "fmp_size": [],
+                "strides": []
+            }
+            # head
+            for i, p in enumerate(features):
+                fmp_h_i, fmp_w_i = p.shape[-2:]
+                cls_feat_i = self.cls_feat(p)
+                reg_feat_i = self.reg_feat(p)
+                # pred
+                cls_pred_i = self.cls_pred(cls_feat_i)
+                reg_pred_i = self.reg_pred(reg_feat_i)
+                ctn_pred_i = self.ctn_pred(reg_feat_i)
 
-                # post-process
-                bboxes, scores, cls_inds = self.postprocess(bboxes, scores)
+                # [B, C, H, W] -> [B, H, W, C]
+                cls_pred_i = cls_pred_i.permute(0, 2, 3, 1).contiguous()
+                reg_pred_i = reg_pred_i.permute(0, 2, 3, 1).contiguous()
+                ctn_pred_i = ctn_pred_i.permute(0, 2, 3, 1).contiguous()
+            
+                # decode box
+                ## generate grid cells
+                anchor_y_i, anchor_x_i = torch.meshgrid([torch.arange(fmp_h_i), torch.arange(fmp_w_i)])
+                # [H, W, 2]
+                anchor_xy_i = torch.stack([anchor_x_i, anchor_y_i], dim=-1).float() + 0.5
+                # [H, W, 2] -> [1, H, W, 2]
+                anchor_xy_i = anchor_xy_i.unsqueeze(0).to(self.device)
 
-                return bboxes, scores, cls_inds
+                ## decode box
+                x1y1_pred_i = anchor_xy_i - reg_pred_i[..., :2].exp()
+                x2y2_pred_i = anchor_xy_i + reg_pred_i[..., 2:].exp()
+                box_pred_i = torch.cat([x1y1_pred_i, x2y2_pred_i], dim=-1)
+
+                outputs["pred_cls"].append(cls_pred_i.view(B, -1, self.num_classes))
+                outputs["pred_box"].append(box_pred_i.view(B, -1, 4))
+                outputs["pred_ctn"].append(ctn_pred_i.view(B, -1, 1))
+                outputs["fmp_size"].append([fmp_h_i, fmp_w_i])
+                outputs["strides"].append(self.stride[i])
+
+                # mask
+                if masks is not None:
+                    # [B, H, W]
+                    resized_masks = torch.nn.functional.interpolate(masks[None], size=[fmp_h_i, fmp_w_i]).bool()[0]
+                    # [B, HW]
+                    resized_masks = resized_masks.flatten(1)
+                    outputs["masks"].append(resized_masks)
+
+            outputs["pred_cls"] = torch.cat(outputs["pred_cls"], dim=1)  # [B, HW, C]
+            outputs["pred_box"] = torch.cat(outputs["pred_box"], dim=1)  # [B, HW, 4]
+            outputs["pred_ctn"] = torch.cat(outputs["pred_ctn"], dim=1)  # [B, HW, 1]
+            outputs["masks"] = torch.cat(outputs["masks"], dim=1) if outputs["masks"] else []      # [B, HW, 1]
+
+            return outputs
 
 
+# build FCOS detector
 def build_model(args, cfg, device, num_classes=80, trainable=False, post_process=False):
     model = FCOS_RT(cfg=cfg,
                     device=device,

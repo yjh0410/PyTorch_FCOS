@@ -19,7 +19,7 @@ def parse_args():
     parser = argparse.ArgumentParser(description='FCOS_RT Detection')
 
     # basic
-    parser.add_argument('-size', '--img_size', default=800, type=int,
+    parser.add_argument('-size', '--img_size', default=512, type=int,
                         help='the min size of input image')
     parser.add_argument('--show', action='store_true', default=False,
                         help='show the visulization results.')
@@ -203,8 +203,7 @@ if __name__ == '__main__':
                     num_classes=num_classes,
                     trainable=False,
                     conf_thresh=args.conf_thresh,
-                    nms_thresh=args.nms_thresh,
-                    post_process=True)
+                    nms_thresh=args.nms_thresh)
 
     # load weight
     model.load_state_dict(torch.load(args.weight, map_location=device), strict=False)
@@ -213,7 +212,6 @@ if __name__ == '__main__':
 
     # TTA
     test_aug = TestTimeAugmentation(num_classes=num_classes) if args.test_aug else None
-
 
     # run
     test(args=args,
