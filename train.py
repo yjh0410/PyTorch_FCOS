@@ -60,8 +60,8 @@ def parse_args():
     parser.add_argument('--vis_anchors', action='store_true', default=False,
                         help='visualize anchor boxes.')
     # model
-    parser.add_argument('-v', '--version', default='fcos_r50_fpn_C5_1x',
-                        help='fcos_r50_fpn_C5_1x, fcos_r101_fpn_C5_1x')
+    parser.add_argument('-v', '--version', default='fcos_r50_fpn_1x',
+                        help='fcos_r50_fpn_1x, fcos_r101_fpn_1x')
     parser.add_argument('--norm', default='BN', type=str,
                         help='normalization layer')
     parser.add_argument('--conf_thresh', default=0.05, type=float,

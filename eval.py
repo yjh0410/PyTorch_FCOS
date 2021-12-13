@@ -17,13 +17,13 @@ from models.fcos import FCOS
 def parse_args():
     parser = argparse.ArgumentParser(description='FCOS Detection')
     # basic
-    parser.add_argument('-size', '--min_size', default=512, type=int,
+    parser.add_argument('-size', '--min_size', default=800, type=int,
                         help='the min size of input image')
     parser.add_argument('--cuda', action='store_true', default=False,
                         help='Use cuda')
     # model
-    parser.add_argument('-v', '--version', default='fcos_r50_fpn_C5_1x',
-                        help='fcos_r50_fpn_C5_1x, fcos_r101_fpn_C5_1x')
+    parser.add_argument('-v', '--version', default='fcos_r50_fpn_1x',
+                        help='fcos_r50_fpn_1x, fcos_r101_fpn_1x')
     parser.add_argument('--weight', default='weight/',
                         type=str, help='Trained state_dict file path to open')
     parser.add_argument('--conf_thresh', default=0.05, type=float,

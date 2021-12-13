@@ -3,7 +3,7 @@
 
 fcos_config = {
     # 1x
-    'fcos_r50_fpn_C5_1x': {
+    'fcos_r50_fpn_1x': {
         # model
         'backbone': 'resnet50',
         'head_dims': 256,
@@ -18,7 +18,7 @@ fcos_config = {
         'scale_range': [(0, 64), (64, 128), (128, 256), (256, 512), (512, 1e10)],
     },
     # 1x
-    'fcos_r101_fpn_C5_1x': {
+    'fcos_r101_fpn_1x': {
         # model
         'backbone': 'resnet101',
         'head_dims': 256,

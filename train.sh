@@ -1,13 +1,9 @@
 python train.py \
         --cuda \
         -d coco \
-        -v fcos_rt_r50_fpn_C5_1x \
+        -v fcos_r50_fpn_1x \
         --lr 0.01 \
         --batch_size 16 \
-        --train_min_size 512 \
-        --train_max_size 900 \
-        --val_min_size 512 \
-        --val_max_size 736 \
+        --img_size 800 \
         --wp_iter 500 \
-        --accumulate 1 \
-        -ms
+        --accumulate 1
