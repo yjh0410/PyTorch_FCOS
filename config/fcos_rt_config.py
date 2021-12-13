@@ -12,8 +12,8 @@ fcos_rt_config = {
         'conf_thresh': 0.05,
         'nms_thresh': 0.6,
         # epoch
-        'max_epoch': 12,
-        'lr_epoch': [8, 11],
+        'max_epoch': 48,
+        'lr_epoch': [16, 22],
         # matcher
         'scale_range': [(0, 64), (64, 128), (128, 1e10)],
     },
