@@ -294,15 +294,14 @@ class FCOS_RT(nn.Module):
 
 
 # build FCOS detector
-def build_model(args, cfg, device, num_classes=80, trainable=False, post_process=False):
+def build_model(args, cfg, device, num_classes=80, trainable=False):
     model = FCOS_RT(cfg=cfg,
                     device=device,
                     num_classes=num_classes,
                     trainable=trainable,
                     norm=args.norm,
                     conf_thresh=args.conf_thresh,
-                    nms_thresh=args.nms_thresh,
-                    post_process=post_process)
+                    nms_thresh=args.nms_thresh)
 
     # SyncBatchNorm
     if args.sybn and args.cuda and args.num_gpu > 1:
