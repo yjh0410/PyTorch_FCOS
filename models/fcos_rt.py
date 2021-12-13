@@ -267,8 +267,8 @@ class FCOS_RT(nn.Module):
                 anchor_xy_i = anchor_xy_i.unsqueeze(0).to(self.device)
 
                 ## decode box
-                x1y1_pred_i = anchor_xy_i - reg_pred_i[..., :2].relu()
-                x2y2_pred_i = anchor_xy_i + reg_pred_i[..., 2:].relu()
+                x1y1_pred_i = anchor_xy_i - reg_pred_i[..., :2].exp()
+                x2y2_pred_i = anchor_xy_i + reg_pred_i[..., 2:].exp()
                 box_pred_i = torch.cat([x1y1_pred_i, x2y2_pred_i], dim=-1)
 
                 outputs["pred_cls"].append(cls_pred_i.view(B, -1, self.num_classes))
