@@ -244,7 +244,6 @@ class FCOS(nn.Module):
                 "strides": []
             }
             # head
-            print(len(features))
             for i, p in enumerate(features):
                 fmp_h_i, fmp_w_i = p.shape[-2:]
                 cls_feat_i = self.cls_feat(p)
