@@ -151,8 +151,7 @@ def train():
                       cfg=cfg,
                       device=device, 
                       num_classes=num_classes, 
-                      trainable=True, 
-                      post_process=False)
+                      trainable=True)
     model = net
     model = model.to(device).train()
 
@@ -294,7 +293,7 @@ def train():
                 print('eval ...')
 
                 # set eval mode
-                model_eval.post_process = True
+                model_eval.trainable = False
                 model_eval.eval()
 
                 if local_rank == 0:
@@ -321,7 +320,7 @@ def train():
                     dist.barrier()
 
                 # set train mode.
-                model_eval.post_process = False
+                model_eval.trainable = True
                 model_eval.train()
     
     if args.tfboard:

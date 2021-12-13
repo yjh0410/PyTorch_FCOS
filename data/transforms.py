@@ -118,7 +118,7 @@ class Resize(object):
 
 # Pad tensor image
 class PadImage(object):
-    def __init__(self, max_size=1333) -> None:
+    def __init__(self, max_size=736) -> None:
         self.max_size = max_size
 
     def __call__(self, image, target=None, mask=None):
@@ -134,7 +134,7 @@ class PadImage(object):
 
 # TrainTransform
 class TrainTransforms(object):
-    def __init__(self, size=800, max_size=1333, mean=(0.485, 0.456, 0.406), std=(0.229, 0.224, 0.225), random_size=False):
+    def __init__(self, size=512, max_size=736, mean=(0.485, 0.456, 0.406), std=(0.229, 0.224, 0.225), random_size=False):
         self.size = size
         self.mean = mean
         self.std = std
@@ -152,7 +152,7 @@ class TrainTransforms(object):
 
 # ValTransform
 class ValTransforms(object):
-    def __init__(self, size=800, mean=(0.485, 0.456, 0.406), std=(0.229, 0.224, 0.225)):
+    def __init__(self, size=512, mean=(0.485, 0.456, 0.406), std=(0.229, 0.224, 0.225)):
         self.size = size
         self.mean = mean
         self.std = std
