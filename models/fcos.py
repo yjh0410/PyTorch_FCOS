@@ -189,6 +189,7 @@ class FCOS(nn.Module):
         scores = outputs["scores"].cpu().numpy()
         labels = outputs["labels"].cpu().numpy()
         bboxes = outputs["bboxes"].cpu().numpy()
+        print(scores.shape, labels.shape, bboxes.shape)
 
         # threshold
         keep = np.where(scores >= self.conf_thresh)
