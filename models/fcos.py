@@ -172,9 +172,10 @@ class FCOS(nn.Module):
             scores_i = torch.sqrt(cls_pred_i.sigmoid() *  ctn_pred_i.sigmoid()).view(-1, self.num_classes)
             cls_scores_i, cls_inds_i = torch.max(scores_i, dim=-1)
             # topk
-            cls_scores_i, topk_scores_indx = torch.topk(cls_scores_i, self.topk)
-            cls_inds_i = cls_inds_i[topk_scores_indx]
-            bboxes_i = bboxes_i[topk_scores_indx]
+            if scores_i.shape[0] > self.topk:
+                cls_scores_i, topk_scores_indx = torch.topk(cls_scores_i, self.topk)
+                cls_inds_i = cls_inds_i[topk_scores_indx]
+                bboxes_i = bboxes_i[topk_scores_indx]
 
             outputs["scores"].append(cls_scores_i)
             outputs["labels"].append(cls_inds_i)
