@@ -1,6 +1,6 @@
 python train.py \
         --cuda \
-        --root /mnt/share/ssd2/dataset/ \
+        --root /home/jxk/object-detection/dataset/ \
         -d coco \
         -v fcos_r50_fpn_1x \
         --lr 0.01 \
