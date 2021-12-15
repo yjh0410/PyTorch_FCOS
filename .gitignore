@@ -6,3 +6,4 @@
 *.pyc
 __pycache__
 .vscode
+det_results

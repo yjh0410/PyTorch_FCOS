@@ -18,6 +18,7 @@ class FCOS(nn.Module):
         super(FCOS, self).__init__()
         self.device = device
         self.fmp_size = None
+        self.topk = 1000
         self.num_classes = num_classes
         self.trainable = trainable
         self.conf_thresh = conf_thresh
@@ -107,38 +108,23 @@ class FCOS(nn.Module):
         return keep
 
 
-    def postprocess(self, bboxes, scores):
+    def decode_boxes(self, fmp_size, reg_pred, stride=None):
         """
-        bboxes: (N, 4), bsize = 1
-        scores: (N, C), bsize = 1
+            fmp_size: (list) [fmp_h, fmp_w] the size of feature map
+            reg_pred: (tensor) [HW, 4]
         """
+        fmp_h, fmp_w = fmp_size
+        # generate grid cells
+        anchor_y, anchor_x = torch.meshgrid([torch.arange(fmp_h), torch.arange(fmp_w)])
+        anchor_xy = torch.stack([anchor_x, anchor_y], dim=-1).float() + 0.5  # [H, W, 2]
+        anchor_xy = anchor_xy.to(self.device).view(-1, 2)  # [HW, 2]
 
-        cls_inds = np.argmax(scores, axis=1)
-        scores = scores[(np.arange(scores.shape[0]), cls_inds)]
+        # decode box
+        x1y1_pred = anchor_xy - reg_pred[..., :2].exp()
+        x2y2_pred = anchor_xy + reg_pred[..., 2:].exp()
+        bboxes = torch.cat([x1y1_pred, x2y2_pred], dim=-1)
         
-        # threshold
-        keep = np.where(scores >= self.conf_thresh)
-        bboxes = bboxes[keep]
-        scores = scores[keep]
-        cls_inds = cls_inds[keep]
-
-        # NMS
-        keep = np.zeros(len(bboxes), dtype=np.int)
-        for i in range(self.num_classes):
-            inds = np.where(cls_inds == i)[0]
-            if len(inds) == 0:
-                continue
-            c_bboxes = bboxes[inds]
-            c_scores = scores[inds]
-            c_keep = self.nms(c_bboxes, c_scores)
-            keep[inds[c_keep]] = 1
-
-        keep = np.where(keep > 0)
-        bboxes = bboxes[keep]
-        scores = scores[keep]
-        cls_inds = cls_inds[keep]
-
-        return bboxes, scores, cls_inds
+        return bboxes if stride is None else bboxes * stride
 
 
     @torch.no_grad()
@@ -154,9 +140,9 @@ class FCOS(nn.Module):
         features = self.neck(x)
 
         outputs = {
-            "pred_cls": [],
-            "pred_box": [],
-            "pred_ctn": []
+            "scores": [],
+            "labels": [],
+            "bboxes": []
         }
         # head
         for i, p in enumerate(features):
@@ -168,53 +154,64 @@ class FCOS(nn.Module):
             reg_pred_i = self.reg_pred(reg_feat_i)
             ctn_pred_i = self.ctn_pred(reg_feat_i)
 
-            # [1, C, H, W] -> [H, W, C]
-            cls_pred_i = cls_pred_i.permute(0, 2, 3, 1).contiguous()[0]
-            reg_pred_i = reg_pred_i.permute(0, 2, 3, 1).contiguous()[0]
-            ctn_pred_i = ctn_pred_i.permute(0, 2, 3, 1).contiguous()[0]
-        
+            # [1, C, H, W] -> [H, W, C] -> [HW, C]
+            cls_pred_i = cls_pred_i.permute(0, 2, 3, 1).contiguous()[0].view(-1, self.num_classes)
+            reg_pred_i = reg_pred_i.permute(0, 2, 3, 1).contiguous()[0].view(-1, 4)
+            ctn_pred_i = ctn_pred_i.permute(0, 2, 3, 1).contiguous()[0].view(-1, 1)
+
             # decode box
-            ## generate grid cells
-            anchor_y_i, anchor_x_i = torch.meshgrid([torch.arange(fmp_h_i), torch.arange(fmp_w_i)])
-            # [H, W, 2]
-            anchor_xy_i = torch.stack([anchor_x_i, anchor_y_i], dim=-1).float() + 0.5
-            # [H, W, 2] -> [H, W, 2]
-            anchor_xy_i = anchor_xy_i.to(self.device)
+            bboxes_i = self.decode_boxes(fmp_size=[fmp_h_i, fmp_w_i], 
+                                         reg_pred=reg_pred_i, 
+                                         stride=self.stride[i])
+            # normalize bbox
+            bboxes_i[..., [0, 2]] /= img_w
+            bboxes_i[..., [1, 3]] /= img_h
+            bboxes_i = bboxes_i.clamp(0., 1.)
 
-            ## decode box
-            x1y1_pred_i = anchor_xy_i - reg_pred_i[..., :2].relu()
-            x2y2_pred_i = anchor_xy_i + reg_pred_i[..., 2:].relu()
-            box_pred_i = torch.cat([x1y1_pred_i, x2y2_pred_i], dim=-1)
-            # rescale
-            box_pred_i = box_pred_i * self.stride[i]
+            # score
+            scores_i = torch.sqrt(cls_pred_i.sigmoid() *  ctn_pred_i.sigmoid()).view(-1, self.num_classes)
+            cls_scores_i, cls_inds_i = torch.max(scores_i, dim=-1)
+            # topk
+            cls_scores_i, topk_scores_indx = torch.topk(cls_scores_i, self.topk)
+            cls_inds_i = cls_inds_i[topk_scores_indx]
+            bboxes_i = bboxes_i[topk_scores_indx]
 
-            # [H, W, C] -> [HW, C]
-            outputs["pred_cls"].append(cls_pred_i.view(-1, self.num_classes))
-            outputs["pred_box"].append(box_pred_i.view(-1, 4))
-            outputs["pred_ctn"].append(ctn_pred_i.view(-1, 1))
-
-        outputs["pred_cls"] = torch.cat(outputs["pred_cls"], dim=0)  # [HW, C]
-        outputs["pred_box"] = torch.cat(outputs["pred_box"], dim=0)  # [HW, 4]
-        outputs["pred_ctn"] = torch.cat(outputs["pred_ctn"], dim=0)  # [HW, 1]
-
-        # score = sqrt(cls * ctn)
-        scores = torch.sqrt(outputs["pred_cls"].sigmoid() * \
-                            outputs["pred_ctn"].sigmoid()).view(-1, self.num_classes) # [HW, C]
-
-        # normalize bbox
-        bboxes = outputs["pred_box"].view(-1, 4) # [HW, 4]
-        bboxes[..., [0, 2]] /= img_w
-        bboxes[..., [1, 3]] /= img_h
-        bboxes = bboxes.clamp(0., 1.)
+            outputs["scores"].append(cls_scores_i)
+            outputs["labels"].append(cls_inds_i)
+            outputs["bboxes"].append(bboxes_i)
+            
+        outputs["scores"] = torch.cat(outputs["scores"], dim=0)      # [N,]
+        outputs["labels"] = torch.cat(outputs["labels"], dim=0)      # [N,]
+        outputs["bboxes"] = torch.cat(outputs["bboxes"], dim=0)      # [N, 4]
 
         # to cpu
-        scores = scores.cpu().numpy()
-        bboxes = bboxes.cpu().numpy()
+        scores = outputs["scores"].cpu().numpy()
+        labels = outputs["labels"].cpu().numpy()
+        bboxes = outputs["bboxes"].cpu().numpy()
 
-        # post-process
-        bboxes, scores, cls_inds = self.postprocess(bboxes, scores)
+        # threshold
+        keep = np.where(scores >= self.conf_thresh)
+        scores = scores[keep]
+        labels = labels[keep]
+        bboxes = bboxes[keep]
 
-        return bboxes, scores, cls_inds
+        # nms
+        keep = np.zeros(len(bboxes), dtype=np.int)
+        for i in range(self.num_classes):
+            inds = np.where(labels == i)[0]
+            if len(inds) == 0:
+                continue
+            c_bboxes = bboxes[inds]
+            c_scores = scores[inds]
+            c_keep = self.nms(c_bboxes, c_scores)
+            keep[inds[c_keep]] = 1
+
+        keep = np.where(keep > 0)
+        bboxes = bboxes[keep]
+        scores = scores[keep]
+        labels = labels[keep]
+        
+        return bboxes, scores, labels
 
 
     def forward(self, image, masks=None):
@@ -254,26 +251,17 @@ class FCOS(nn.Module):
                 ctn_pred_i = self.ctn_pred(reg_feat_i)
 
                 # [B, C, H, W] -> [B, H, W, C]
-                cls_pred_i = cls_pred_i.permute(0, 2, 3, 1).contiguous()
-                reg_pred_i = reg_pred_i.permute(0, 2, 3, 1).contiguous()
-                ctn_pred_i = ctn_pred_i.permute(0, 2, 3, 1).contiguous()
+                cls_pred_i = cls_pred_i.permute(0, 2, 3, 1).contiguous().view(B, -1, self.num_classes)
+                reg_pred_i = reg_pred_i.permute(0, 2, 3, 1).contiguous().view(B, -1, 4)
+                ctn_pred_i = ctn_pred_i.permute(0, 2, 3, 1).contiguous().view(B, -1, 1)
             
                 # decode box
-                ## generate grid cells
-                anchor_y_i, anchor_x_i = torch.meshgrid([torch.arange(fmp_h_i), torch.arange(fmp_w_i)])
-                # [H, W, 2]
-                anchor_xy_i = torch.stack([anchor_x_i, anchor_y_i], dim=-1).float() + 0.5
-                # [H, W, 2] -> [1, H, W, 2]
-                anchor_xy_i = anchor_xy_i.unsqueeze(0).to(self.device)
+                box_pred_i = self.decode_boxes(fmp_size=[fmp_h_i, fmp_w_i],
+                                               reg_pred=reg_pred_i)
 
-                ## decode box
-                x1y1_pred_i = anchor_xy_i - reg_pred_i[..., :2].exp()
-                x2y2_pred_i = anchor_xy_i + reg_pred_i[..., 2:].exp()
-                box_pred_i = torch.cat([x1y1_pred_i, x2y2_pred_i], dim=-1)
-
-                outputs["pred_cls"].append(cls_pred_i.view(B, -1, self.num_classes))
-                outputs["pred_box"].append(box_pred_i.view(B, -1, 4))
-                outputs["pred_ctn"].append(ctn_pred_i.view(B, -1, 1))
+                outputs["pred_cls"].append(cls_pred_i)
+                outputs["pred_box"].append(box_pred_i)
+                outputs["pred_ctn"].append(ctn_pred_i)
                 outputs["fmp_size"].append([fmp_h_i, fmp_w_i])
                 outputs["strides"].append(self.stride[i])
 
