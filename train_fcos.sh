@@ -6,6 +6,9 @@ python train.py \
         --lr 0.01 \
         --norm GN \
         --batch_size 8 \
-        --img_size 800 \
+        --train_min_size 800 \
+        --train_max_size 1333 \
+        --val_min_size 800 \
+        --val_max_size 1333 \
         --wp_iter 500 \
         --accumulate 2

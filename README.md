@@ -24,5 +24,11 @@ PyTorch >= 1.1.0 and Torchvision >= 0.3.0
 Paper: 
 
 ```Shell
-Tian Z, Shen C, Chen H, et al. Fcos: A simple and strong anchor-free object detector[J]. IEEE Transactions on Pattern Analysis and Machine Intelligence, 2020.
+@article{tian2020fcos,
+  title={Fcos: A simple and strong anchor-free object detector},
+  author={Tian, Zhi and Shen, Chunhua and Chen, Hao and He, Tong},
+  journal={IEEE Transactions on Pattern Analysis and Machine Intelligence},
+  year={2020},
+  publisher={IEEE}
+}
 ```
