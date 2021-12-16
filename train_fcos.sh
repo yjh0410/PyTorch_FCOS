@@ -4,7 +4,6 @@ python train.py \
         -d coco \
         -v fcos_r50_fpn_1x \
         --lr 0.01 \
-        --norm GN \
         --batch_size 8 \
         --train_min_size 800 \
         --train_max_size 1333 \

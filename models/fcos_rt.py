@@ -13,8 +13,7 @@ class FCOS_RT(nn.Module):
                  num_classes = 20, 
                  conf_thresh = 0.05,
                  nms_thresh = 0.6,
-                 trainable = False, 
-                 norm = 'BN'):
+                 trainable = False):
         super(FCOS_RT, self).__init__()
         self.device = device
         self.fmp_size = None
@@ -36,16 +35,16 @@ class FCOS_RT(nn.Module):
 
         # head
         self.cls_feat = nn.Sequential(
-            Conv(cfg['head_dims'], cfg['head_dims'], k=3, p=1, s=1, norm=norm),
-            Conv(cfg['head_dims'], cfg['head_dims'], k=3, p=1, s=1, norm=norm),
-            Conv(cfg['head_dims'], cfg['head_dims'], k=3, p=1, s=1, norm=norm),
-            Conv(cfg['head_dims'], cfg['head_dims'], k=3, p=1, s=1, norm=norm)
+            Conv(cfg['head_dims'], cfg['head_dims'], k=3, p=1, s=1, norm=cfg['norm']),
+            Conv(cfg['head_dims'], cfg['head_dims'], k=3, p=1, s=1, norm=cfg['norm']),
+            Conv(cfg['head_dims'], cfg['head_dims'], k=3, p=1, s=1, norm=cfg['norm']),
+            Conv(cfg['head_dims'], cfg['head_dims'], k=3, p=1, s=1, norm=cfg['norm'])
         )
         self.reg_feat = nn.Sequential(
-            Conv(cfg['head_dims'], cfg['head_dims'], k=3, p=1, s=1, norm=norm),
-            Conv(cfg['head_dims'], cfg['head_dims'], k=3, p=1, s=1, norm=norm),
-            Conv(cfg['head_dims'], cfg['head_dims'], k=3, p=1, s=1, norm=norm),
-            Conv(cfg['head_dims'], cfg['head_dims'], k=3, p=1, s=1, norm=norm)
+            Conv(cfg['head_dims'], cfg['head_dims'], k=3, p=1, s=1, norm=cfg['norm']),
+            Conv(cfg['head_dims'], cfg['head_dims'], k=3, p=1, s=1, norm=cfg['norm']),
+            Conv(cfg['head_dims'], cfg['head_dims'], k=3, p=1, s=1, norm=cfg['norm']),
+            Conv(cfg['head_dims'], cfg['head_dims'], k=3, p=1, s=1, norm=cfg['norm'])
         )
 
         # head

@@ -11,7 +11,6 @@ def build_model(args, cfg, device, num_classes=80, trainable=False):
                         device=device,
                         num_classes=num_classes,
                         trainable=trainable,
-                        norm=args.norm,
                         conf_thresh=args.conf_thresh,
                         nms_thresh=args.nms_thresh)
     elif args.model == 'fcos_rt':
@@ -20,7 +19,6 @@ def build_model(args, cfg, device, num_classes=80, trainable=False):
                         device=device,
                         num_classes=num_classes,
                         trainable=trainable,
-                        norm=args.norm,
                         conf_thresh=args.conf_thresh,
                         nms_thresh=args.nms_thresh)
 
