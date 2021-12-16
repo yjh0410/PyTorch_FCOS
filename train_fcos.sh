@@ -2,7 +2,8 @@ python train.py \
         --cuda \
         --root /home/jxk/object-detection/dataset/ \
         -d coco \
-        -v fcos_r50_fpn_1x \
+        -m fcos \
+        -mc fcos_r50_fpn_1x \
         --lr 0.01 \
         --batch_size 8 \
         --train_min_size 800 \
