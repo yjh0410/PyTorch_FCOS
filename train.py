@@ -72,8 +72,6 @@ def parse_args():
                         help='fcos, fcos_rt')
     parser.add_argument('-mc', '--model_conf', default='fcos_r50_fpn_1x',
                         help='fcos_r50_fpn_1x, fcos_r101_fpn_1x')
-    parser.add_argument('--norm', default='BN', type=str,
-                        help='normalization layer')
     parser.add_argument('--conf_thresh', default=0.05, type=float,
                         help='NMS threshold')
     parser.add_argument('--nms_thresh', default=0.6, type=float,

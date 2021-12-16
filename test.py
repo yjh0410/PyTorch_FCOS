@@ -113,7 +113,7 @@ def test(args,
          test_aug=None, 
          dataset_name='coco'):
     num_images = len(dataset)
-    save_path = os.path.join('det_results/', args.dataset, args.version)
+    save_path = os.path.join('det_results/', args.dataset, args.model_conf)
     os.makedirs(save_path, exist_ok=True)
 
     for index in range(num_images):
