@@ -142,14 +142,14 @@ class FCOS(nn.Module):
         features = self.neck(x)
         p6 = self.conv_p6(features[-1])
         p7 = self.conv_p7(p6)
-        features.append([p6, p7])
+        features.extend([p6, p7])
 
+        # head
         outputs = {
             "scores": [],
             "labels": [],
             "bboxes": []
         }
-        # head
         for i, p in enumerate(features):
             fmp_h_i, fmp_w_i = p.shape[-2:]
             cls_feat_i = self.cls_feat(p)
@@ -239,9 +239,9 @@ class FCOS(nn.Module):
             features = self.neck(x)
             p6 = self.conv_p6(features[-1])
             p7 = self.conv_p7(p6)
-            features.append([p6, p7])
+            features.extend([p6, p7])
 
-
+            # head
             outputs = {
                 "pred_cls": [],
                 "pred_box": [],
@@ -250,7 +250,6 @@ class FCOS(nn.Module):
                 "fmp_size": [],
                 "strides": []
             }
-            # head
             for i, p in enumerate(features):
                 fmp_h_i, fmp_w_i = p.shape[-2:]
                 cls_feat_i = self.cls_feat(p)
