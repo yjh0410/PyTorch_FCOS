@@ -251,7 +251,7 @@ def train():
                                                         images=images,
                                                         vis_labels=args.vis_targets)
             
-            total_loss = total_loss / args.accumulate
+            # total_loss = total_loss / args.accumulate
 
             loss_dict = dict(
                 cls_loss=cls_loss,
