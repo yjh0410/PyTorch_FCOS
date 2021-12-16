@@ -19,8 +19,10 @@ def parse_args():
     parser = argparse.ArgumentParser(description='FCOS Detection')
 
     # basic
-    parser.add_argument('-size', '--img_size', default=800, type=int,
+    parser.add_argument('--test_min_size', default=800, type=int,
                         help='the shorter size of input image')
+    parser.add_argument('--test_max_size', default=1333, type=int,
+                        help='the longer size of input image')
     parser.add_argument('--show', action='store_true', default=False,
                         help='show the visulization results.')
     parser.add_argument('-vs', '--visual_threshold', default=0.35, type=float,
@@ -211,6 +213,10 @@ if __name__ == '__main__':
     model = model.to(device).eval()
     print('Finished loading model!')
 
+    # transform
+    transform = ValTransforms(min_size=args.test_min_size, 
+                              max_size=args.test_max_size)
+
     # TTA
     test_aug = TestTimeAugmentation(num_classes=num_classes) if args.test_aug else None
 
@@ -219,7 +225,7 @@ if __name__ == '__main__':
         net=model, 
         device=device, 
         dataset=dataset,
-        transforms=ValTransforms(args.img_size),
+        transforms=transform,
         vis_thresh=args.visual_threshold,
         class_colors=class_colors,
         class_names=class_names,
