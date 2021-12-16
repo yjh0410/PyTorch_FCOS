@@ -6,7 +6,7 @@ from .resnet import build_backbone
 from .fpn import build_fpn
 
 
-class FCOS(nn.Module):
+class FCOS_RT(nn.Module):
     def __init__(self, 
                  cfg,
                  device, 
@@ -15,7 +15,7 @@ class FCOS(nn.Module):
                  nms_thresh = 0.6,
                  trainable = False, 
                  norm = 'BN'):
-        super(FCOS, self).__init__()
+        super(FCOS_RT, self).__init__()
         self.device = device
         self.fmp_size = None
         self.topk = 1000
@@ -23,7 +23,7 @@ class FCOS(nn.Module):
         self.trainable = trainable
         self.conf_thresh = conf_thresh
         self.nms_thresh = nms_thresh
-        self.stride = [8, 16, 32, 64, 128]
+        self.stride = [8, 16, 32]
 
         # backbone
         self.backbone, feature_channels = build_backbone(model_name=cfg['backbone'],
@@ -33,8 +33,6 @@ class FCOS(nn.Module):
 
         # neck
         self.neck = build_fpn(model_name=cfg['fpn'], in_channels=feature_channels, out_channel=cfg['head_dims'])
-        self.conv_p6 = nn.Conv2d(cfg['head_dims'], cfg['head_dims'], kernel_size=3, padding=1, stride=2)
-        self.conv_p7 = nn.Conv2d(cfg['head_dims'], cfg['head_dims'], kernel_size=3, padding=1, stride=2)
 
         # head
         self.cls_feat = nn.Sequential(
@@ -140,9 +138,6 @@ class FCOS(nn.Module):
 
         # neck: P3, P4, P5
         features = self.neck(x)
-        p6 = self.conv_p6(features[-1])
-        p7 = self.conv_p7(p6)
-        features.extend([p6, p7])
 
         # head
         outputs = {
@@ -237,9 +232,6 @@ class FCOS(nn.Module):
 
             # neck: P3, P4, P5
             features = self.neck(x)
-            p6 = self.conv_p6(features[-1])
-            p7 = self.conv_p7(p6)
-            features.extend([p6, p7])
 
             # head
             outputs = {

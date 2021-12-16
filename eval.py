@@ -11,7 +11,7 @@ from config.fcos_config import fcos_config
 
 from utils.misc import TestTimeAugmentation
 
-from models.fcos import FCOS
+from models import build_model
 
 
 def parse_args():
@@ -22,7 +22,9 @@ def parse_args():
     parser.add_argument('--cuda', action='store_true', default=False,
                         help='Use cuda')
     # model
-    parser.add_argument('-v', '--version', default='fcos_r50_fpn_1x',
+    parser.add_argument('-m', '--model', default='fcos',
+                        help='fcos, fcos_rt')
+    parser.add_argument('-mc', '--model_conf', default='fcos_r50_fpn_1x',
                         help='fcos_r50_fpn_1x, fcos_r101_fpn_1x')
     parser.add_argument('--weight', default='weight/',
                         type=str, help='Trained state_dict file path to open')
@@ -104,16 +106,15 @@ if __name__ == '__main__':
 
 
     # FCOS-RT config
-    print('Model: ', args.version)
-    cfg = fcos_config[args.version]
+    print('Model: ', args.model_conf)
+    cfg = fcos_config[args.model_conf]
 
     # build model
-    model = FCOS(cfg=cfg,
-                 device=device,
-                 num_classes=num_classes,
-                 trainable=False,
-                 conf_thresh=args.conf_thresh,
-                 nms_thresh=args.nms_thresh)
+    model = build_model(args=args, 
+                        cfg=cfg,
+                        device=device, 
+                        num_classes=num_classes, 
+                        trainable=False)
 
     # load weight
     model.load_state_dict(torch.load(args.weight, map_location=device), strict=False)

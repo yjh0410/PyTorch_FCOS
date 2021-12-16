@@ -25,7 +25,7 @@ from utils.vis import vis_data
 from evaluator.coco_evaluator import COCOAPIEvaluator
 from evaluator.voc_evaluator import VOCAPIEvaluator
 
-from models.fcos import build_model
+from models import build_model
 
 
 def parse_args():
@@ -68,7 +68,9 @@ def parse_args():
     parser.add_argument('--vis_anchors', action='store_true', default=False,
                         help='visualize anchor boxes.')
     # model
-    parser.add_argument('-v', '--version', default='fcos_r50_fpn_1x',
+    parser.add_argument('-m', '--model', default='fcos',
+                        help='fcos, fcos_rt')
+    parser.add_argument('-mc', '--model_conf', default='fcos_r50_fpn_1x',
                         help='fcos_r50_fpn_1x, fcos_r101_fpn_1x')
     parser.add_argument('--norm', default='BN', type=str,
                         help='normalization layer')
@@ -118,7 +120,7 @@ def train():
     print("----------------------------------------------------------")
 
     # path to save model
-    path_to_save = os.path.join(args.save_folder, args.dataset, args.version)
+    path_to_save = os.path.join(args.save_folder, args.dataset, args.model_conf)
     os.makedirs(path_to_save, exist_ok=True)
 
     # set distributed
@@ -138,8 +140,8 @@ def train():
         device = torch.device("cpu")
 
     # FCOS-RT Config
-    print('Model: ', args.version)
-    cfg = fcos_config[args.version]
+    print('Model: ', args.model_conf)
+    cfg = fcos_config[args.model_conf]
 
     # dataset and evaluator
     dataset, evaluator, num_classes = build_dataset(args, device)
@@ -178,7 +180,12 @@ def train():
     if args.distributed and args.num_gpu > 1:
         print('using DDP ...')
         model = DDP(model, device_ids=[local_rank], output_device=local_rank)
-     
+
+    # SyncBatchNorm
+    if args.sybn and args.cuda and args.num_gpu > 1:
+        print('use SyncBatchNorm ...')
+        model = torch.nn.SyncBatchNorm.convert_sync_batchnorm(model)
+
     # use tfboard
     tblogger = None
     if args.tfboard:
@@ -298,7 +305,7 @@ def train():
                 print('No evaluator ...')
                 print('Saving state, epoch:', epoch + 1)
                 torch.save(model_eval.state_dict(), os.path.join(path_to_save, 
-                            args.version + '_' + repr(epoch + 1) + '.pth'))  
+                            args.model_conf + '_' + repr(epoch + 1) + '.pth'))  
                 print('Keep training ...')
             else:
                 print('eval ...')
@@ -318,7 +325,7 @@ def train():
                         # save model
                         print('Saving state, epoch:', epoch + 1)
                         torch.save(model_eval.state_dict(), os.path.join(path_to_save, 
-                                    args.version + '_' + repr(epoch + 1) + '_' + str(round(best_map*100, 1)) + '.pth'))  
+                                    args.model_conf + '_' + repr(epoch + 1) + '_' + str(round(best_map*100, 1)) + '.pth'))  
                     if args.tfboard:
                         if args.dataset == 'voc':
                             tblogger.add_scalar('07test/mAP', evaluator.map, epoch)
