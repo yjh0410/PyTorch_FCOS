@@ -33,6 +33,8 @@ class FCOS(nn.Module):
 
         # neck
         self.neck = build_fpn(model_name=cfg['fpn'], in_channels=feature_channels, out_channel=cfg['head_dims'])
+        self.conv_p6 = nn.Conv2d(cfg['head_dims'], cfg['head_dims'], kernel_size=3, padding=1, stride=2)
+        self.conv_p7 = nn.Conv2d(cfg['head_dims'], cfg['head_dims'], kernel_size=3, padding=1, stride=2)
 
         # head
         self.cls_feat = nn.Sequential(
@@ -136,8 +138,11 @@ class FCOS(nn.Module):
         # backbone: C3, C4, C5
         x = self.backbone(x)
 
-        # neck: P3, P4, P5, P6, P7
+        # neck: P3, P4, P5
         features = self.neck(x)
+        p6 = self.conv_p6(features[-1])
+        p7 = self.conv_p7(p6)
+        features.append([p6, p7])
 
         outputs = {
             "scores": [],
@@ -230,8 +235,12 @@ class FCOS(nn.Module):
             # backbone: C3, C4, C5
             x = self.backbone(image)
 
-            # neck: P3, P4, P5, P6, P7
+            # neck: P3, P4, P5
             features = self.neck(x)
+            p6 = self.conv_p6(features[-1])
+            p7 = self.conv_p7(p6)
+            features.append([p6, p7])
+
 
             outputs = {
                 "pred_cls": [],

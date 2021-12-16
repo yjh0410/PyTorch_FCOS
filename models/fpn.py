@@ -11,8 +11,6 @@ class BasicFPN(nn.Module):
         self.latter_1 = nn.Conv2d(c3, out_channel, kernel_size=1)
         self.latter_2 = nn.Conv2d(c4, out_channel, kernel_size=1)
         self.latter_3 = nn.Conv2d(c5, out_channel, kernel_size=1)
-        self.conv_p6 = nn.Conv2d(out_channel, out_channel, kernel_size=3, padding=1, stride=2)
-        self.conv_p7 = nn.Conv2d(out_channel, out_channel, kernel_size=3, padding=1, stride=2)
 
         # smooth layers
         self.smooth_1 = nn.Conv2d(out_channel, out_channel, kernel_size=3, padding=1)
@@ -32,10 +30,7 @@ class BasicFPN(nn.Module):
 
         p3 = self.smooth_1(self.latter_1(c3) + p4_up)
 
-        p6 = self.conv_p6(p5)
-        p7 = self.conv_p7(p6)
-
-        return [p3, p4, p5, p6, p7]
+        return [p3, p4, p5]
 
 
 def build_fpn(model_name='basic_fpn', in_channels=[512, 1024, 2048], out_channel=256):
