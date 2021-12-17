@@ -142,7 +142,7 @@ def train():
     cfg = fcos_config[args.model_conf]
 
     # dataset and evaluator
-    dataset, evaluator, num_classes = build_dataset(args, device)
+    dataset, evaluator, num_classes = build_dataset(args, cfg, device)
 
     # dataloader
     dataloader = build_dataloader(args, dataset, detection_collate)
@@ -344,15 +344,16 @@ def train():
         tblogger.close()
 
 
-def build_dataset(args, device):
+def build_dataset(args, cfg, device):
     if args.dataset == 'voc':
         data_dir = os.path.join(args.root, 'VOCdevkit')
         num_classes = 20
+        random_size = cfg["random_size"] if args.multi_scale else None
         dataset = VOCDetection(
                         data_dir=data_dir,
                         transform=TrainTransforms(min_size=args.train_min_size, 
                                                   max_size=args.train_max_size,
-                                                  random_size=args.multi_scale))
+                                                  random_size=random_size))
 
         evaluator = VOCAPIEvaluator(
                         data_dir=data_dir,
@@ -363,12 +364,13 @@ def build_dataset(args, device):
     elif args.dataset == 'coco':
         data_dir = os.path.join(args.root, 'COCO')
         num_classes = 80
+        random_size = cfg["random_size"] if args.multi_scale else None
         dataset = COCODataset(
                     data_dir=data_dir,
                     image_set='train2017',
                     transform=TrainTransforms(min_size=args.train_min_size, 
                                               max_size=args.train_max_size,
-                                              random_size=args.multi_scale))
+                                              random_size=random_size))
 
         evaluator = COCOAPIEvaluator(
                         data_dir=data_dir,

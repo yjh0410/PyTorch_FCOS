@@ -191,7 +191,12 @@ if __name__ == "__main__":
 
     min_size = 512
     max_size = 900
-    transform = TrainTransforms(min_size=min_size, max_size=max_size, random_size=True)
+    random_size = [400, 500, 600, 700, 800]
+    # transform
+    transform = TrainTransforms(min_size=min_size, 
+                                max_size=max_size, 
+                                random_size=random_size)
+    # dataset
     dataset = VOCDetection(
                 data_dir='d:/datasets/VOCdevkit/',
                 transform=transform)

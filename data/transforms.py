@@ -84,14 +84,14 @@ class Normalize(object):
 
 # Resize tensor image
 class Resize(object):
-    def __init__(self, min_size=800, max_size=1333, random_size=False):
+    def __init__(self, min_size=800, max_size=1333, random_size=None):
         self.min_size = min_size
         self.max_size = max_size
         self.random_size = random_size
 
     def __call__(self, image, target=None, mask=None):
-        if self.random_size:
-            min_size = random.choice([400, 500, 600, 700, 800])
+        if self.random_size is not None:
+            min_size = random.choice(self.random_size)
         else:
             min_size = self.min_size
 

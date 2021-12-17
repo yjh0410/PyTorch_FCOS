@@ -17,6 +17,8 @@ fcos_config = {
         'lr_epoch': [8, 11],
         # matcher
         'scale_range': [(0, 64), (64, 128), (128, 256), (256, 512), (512, 1e10)],
+        # multi scale
+        'random_size': [400, 500, 600, 700, 800]
     },
     # 1x
     'fcos_r101_fpn_1x': {
@@ -33,6 +35,8 @@ fcos_config = {
         'lr_epoch': [8, 11],
         # matcher
         'scale_range': [(0, 64), (64, 128), (128, 256), (256, 512), (512, 1e10)],
+        # multi scale
+        'random_size': [400, 500, 600, 700, 800]
     },
     # 4x
     'fcos_rt_r50_fpn_4x': {
@@ -49,5 +53,7 @@ fcos_config = {
         'lr_epoch': [16, 22],
         # matcher
         'scale_range': [(0, 64), (64, 128), (128, 1e10)],
+        # multi scale
+        'random_size': [256, 288, 320, 352, 384, 416, 448, 480, 512, 544, 576, 608]
     }
 }
