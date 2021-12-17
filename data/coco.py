@@ -174,11 +174,18 @@ if __name__ == "__main__":
     rgb_mean = np.array((0.485, 0.456, 0.406), dtype=np.float32)
     rgb_std = np.array((0.229, 0.224, 0.225), dtype=np.float32)
 
-    img_size = 800
+    min_size = 512
+    max_size = 900
+    random_size = [400, 500, 600, 700, 800]
+    # transform
+    transform = TrainTransforms(min_size=min_size, 
+                                max_size=max_size, 
+                                random_size=random_size)
+    # dataset
     dataset = COCODataset(
                 data_dir='/mnt/share/ssd2/dataset/COCO/',
                 image_set='train2017',
-                transform=TrainTransforms(img_size))
+                transform=transform)
     
     np.random.seed(0)
     class_colors = [(np.random.randint(255),
