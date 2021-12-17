@@ -40,7 +40,7 @@ fcos_config = {
         'backbone': 'resnet50',
         'head_dims': 256,
         'fpn': 'basic_fpn',
-        'norm': 'GN',
+        'norm': 'BN',
         # post process
         'conf_thresh': 0.05,
         'nms_thresh': 0.6,

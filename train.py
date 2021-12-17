@@ -206,7 +206,6 @@ def train():
 
     # training configuration
     max_epoch = cfg['max_epoch']
-    lr_epoch = cfg['lr_epoch']
     batch_size = args.batch_size
     epoch_size = len(dataset) // (batch_size * args.num_gpu)
     best_map = -1.
@@ -251,7 +250,7 @@ def train():
                                                         images=images,
                                                         vis_labels=args.vis_targets)
             
-            # total_loss = total_loss / args.accumulate
+            total_loss = total_loss / args.accumulate
 
             loss_dict = dict(
                 cls_loss=cls_loss,
@@ -294,6 +293,8 @@ def train():
                         flush=True)
 
                 t0 = time.time()
+
+        lr_scheduler.step()
 
         # evaluation
         if (epoch + 1) % args.eval_epoch == 0 or (epoch + 1) == max_epoch:
