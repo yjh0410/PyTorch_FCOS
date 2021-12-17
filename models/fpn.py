@@ -33,6 +33,15 @@ class BasicFPN(nn.Module):
         return [p3, p4, p5]
 
 
+class BiFPN(nn.Module):
+    def __init__(self, in_channels=[512, 1024, 2048], out_channel=256):
+        super().__init__()
+
+    def forward(self, x):
+        return -1
+
+
+# build FPN
 def build_fpn(model_name='basic_fpn', in_channels=[512, 1024, 2048], out_channel=256):
     if model_name == 'basic_fpn':
         print("Basic FPN ...")
