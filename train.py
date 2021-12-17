@@ -98,6 +98,10 @@ def parse_args():
                         help='The upper bound of warm-up')
     parser.add_argument('-ms', '--multi_scale', action='store_true', default=False,
                         help='use multi-scale trick')
+    
+    # optimizer
+    parser.add_argument('--optim', default='sgd', type=str,
+                        help='sgd, adamw')
     parser.add_argument('--accumulate', type=int, default=1,
                         help='accumulate gradient')
 
@@ -197,10 +201,17 @@ def train():
     
     # optimizer setup
     tmp_lr = base_lr = args.lr
-    optimizer = optim.SGD(model.parameters(), 
-                            lr=tmp_lr, 
-                            momentum=0.9,
-                            weight_decay=1e-4)
+    if args.optim == 'sgd':
+        print('use SGD with momentum ...')
+        optimizer = optim.SGD(model.parameters(), 
+                                lr=tmp_lr, 
+                                momentum=0.9,
+                                weight_decay=1e-4)
+    elif args.optim == 'adamw':
+        print('use AdamW ...')
+        optimizer = optim.AdamW(model.parameters(), 
+                                lr=tmp_lr, 
+                                weight_decay=1e-4)
     # lr schedule
     lr_scheduler = torch.optim.lr_scheduler.MultiStepLR(optimizer, milestones=cfg['lr_epoch'])
 
