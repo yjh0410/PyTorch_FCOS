@@ -19,16 +19,16 @@ class BasicFPN(nn.Module):
 
     def forward(self, features):
         c3, c4, c5 = features
-        # fpn
         p5 = self.latter_3(c5)
-        p5_up = F.interpolate(p5, size=c4.shape[-2:])
+        p4 = self.latter_2(c4)
+        p3 = self.latter_1(c3)
+        # fpn
+        p4 = p4 + F.interpolate(p5, size=c4.shape[-2:])
+        p3 = p3 + F.interpolate(p4, size=c3.shape[-2:])
+
         p5 = self.smooth_3(p5)
-
-        p4 = self.latter_2(c4) + p5_up
-        p4_up = F.interpolate(p4, size=c3.shape[-2:])
         p4 = self.smooth_2(p4)
-
-        p3 = self.smooth_1(self.latter_1(c3) + p4_up)
+        p3 = self.smooth_1(p3)
 
         return [p3, p4, p5]
 

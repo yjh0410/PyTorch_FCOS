@@ -11,5 +11,4 @@ python train.py \
         --val_min_size 800 \
         --val_max_size 1333 \
         --wp_iter 500 \
-        --optim adamw \
         --accumulate 2
