@@ -7,7 +7,7 @@ fcos_config = {
         # model
         'backbone': 'resnet50',
         'head_dims': 256,
-        'fpn': 'basic_fpn',
+        'fpn': 'fpn',
         'norm': 'GN',
         # post process
         'conf_thresh': 0.05,
@@ -25,7 +25,7 @@ fcos_config = {
         # model
         'backbone': 'resnet101',
         'head_dims': 256,
-        'fpn': 'basic_fpn',
+        'fpn': 'fpn',
         'norm': 'GN',
         # post process
         'conf_thresh': 0.05,
@@ -43,7 +43,25 @@ fcos_config = {
         # model
         'backbone': 'resnet50',
         'head_dims': 256,
-        'fpn': 'basic_fpn',
+        'fpn': 'fpn',
+        'norm': 'BN',
+        # post process
+        'conf_thresh': 0.05,
+        'nms_thresh': 0.6,
+        # epoch
+        'max_epoch': 48,
+        'lr_epoch': [16, 22],
+        # matcher
+        'scale_range': [(0, 64), (64, 128), (128, 1e10)],
+        # multi scale
+        'random_size': [256, 288, 320, 352, 384, 416, 448, 480, 512, 544, 576, 608]
+    },
+    # 4x
+    'fcos_rt_r50_pan_4x': {
+        # model
+        'backbone': 'resnet50',
+        'head_dims': 256,
+        'fpn': 'pan',
         'norm': 'BN',
         # post process
         'conf_thresh': 0.05,

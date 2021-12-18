@@ -2,10 +2,10 @@ import torch.nn as nn
 import torch.nn.functional as F
 
 
-# Basic FPN
-class BasicFPN(nn.Module):
+# FPN
+class FPN(nn.Module):
     def __init__(self, in_channels=[512, 1024, 2048], out_channel=256):
-        super(BasicFPN, self).__init__()
+        super(FPN, self).__init__()
         c3, c4, c5 = in_channels
         # latter layers
         self.latter_1 = nn.Conv2d(c3, out_channel, kernel_size=1)
@@ -35,9 +35,9 @@ class BasicFPN(nn.Module):
 
 # PAN
 class PAN(nn.Module):
-    # There module is designed for FCOS-RT
+    # There module is designed for FCOS-RT, not FCOS
     def __init__(self, in_channels=[512, 1024, 2048], out_channel=256):
-        super(BasicFPN, self).__init__()
+        super(FPN, self).__init__()
         c3, c4, c5 = in_channels
         # latter layers: top-dwon
         self.latter_1_1 = nn.Conv2d(c3, out_channel, kernel_size=1)
@@ -65,7 +65,7 @@ class PAN(nn.Module):
         p5 = self.latter_3_1(c5)
         p4 = self.latter_2_1(c4)
         p3 = self.latter_1_1(c3)
-
+        # upsample
         p4 = p4 + F.interpolate(p5, size=c4.shape[-2:])
         p3 = p3 + F.interpolate(p4, size=c3.shape[-2:])
 
@@ -77,7 +77,7 @@ class PAN(nn.Module):
         p3 = self.latter_1_2(p3)
         p4 = self.latter_2_2(p4)
         p5 = self.latter_3_2(p5)
-
+        # downsample
         p4 = p4 + F.interpolate(p3, size=p4.shape[-2:])
         p5 = p5 + F.interpolate(p4, size=p5.shape[-2:])
 
@@ -89,13 +89,10 @@ class PAN(nn.Module):
 
 
 # build FPN
-def build_fpn(model_name='basic_fpn', in_channels=[512, 1024, 2048], out_channel=256):
-    if model_name == 'basic_fpn':
-        print("Basic FPN ...")
-        return BasicFPN(in_channels, out_channel)
-    elif model_name == 'bifpn':
-        print('BiFPN ...')
-        return None
+def build_fpn(model_name='fpn', in_channels=[512, 1024, 2048], out_channel=256):
+    if model_name == 'fpn':
+        print("FPN ...")
+        return FPN(in_channels, out_channel)
     elif model_name == 'pan':
         print('PAN ...')
         return PAN(in_channels, out_channel)
