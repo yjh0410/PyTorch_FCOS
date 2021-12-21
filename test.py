@@ -25,7 +25,7 @@ def parse_args():
                         help='the longer size of input image')
     parser.add_argument('--show', action='store_true', default=False,
                         help='show the visulization results.')
-    parser.add_argument('-vs', '--visual_threshold', default=0.35, type=float,
+    parser.add_argument('-vs', '--visual_threshold', default=0.4, type=float,
                         help='Final confidence threshold')
     parser.add_argument('--cuda', action='store_true', default=False, 
                         help='use cuda.')
