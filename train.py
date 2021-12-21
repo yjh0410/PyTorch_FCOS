@@ -279,12 +279,11 @@ def train():
                     tblogger.add_scalar('ctn loss',  loss_dict_reduced['ctn_loss'].item(),  ni)
                 
                 t1 = time.time()
-                print('[Epoch %d/%d][Iter %d/%d][lr %.6f][Loss: cls %.2f || reg %.2f || ctn %.2f || size (%d, %d) || time: %.2f]'
+                print('[Epoch %d/%d][Iter %d/%d][Loss: cls %.2f || reg %.2f || ctn %.2f || size (%d, %d) || time: %.2f]'
                         % (epoch+1, 
                            max_epoch, 
                            iter_i, 
                            epoch_size, 
-                           tmp_lr,
                            loss_dict['cls_loss'].item(), 
                            loss_dict['reg_loss'].item(), 
                            loss_dict['ctn_loss'].item(), 

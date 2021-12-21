@@ -50,7 +50,7 @@ fcos_config = {
         'nms_thresh': 0.6,
         # epoch
         'max_epoch': 48,
-        'lr_epoch': [16, 22],
+        'lr_epoch': [32, 44],
         # matcher
         'scale_range': [(0, 64), (64, 128), (128, 1e10)],
         # multi scale
@@ -68,7 +68,7 @@ fcos_config = {
         'nms_thresh': 0.6,
         # epoch
         'max_epoch': 48,
-        'lr_epoch': [16, 22],
+        'lr_epoch': [32, 44],
         # matcher
         'scale_range': [(0, 64), (64, 128), (128, 1e10)],
         # multi scale
