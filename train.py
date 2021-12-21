@@ -138,8 +138,9 @@ def train():
         device = torch.device("cpu")
 
     # FCOS-RT Config
-    print('Model: ', args.model_conf)
     cfg = fcos_config[args.model_conf]
+    print('Model: ', args.model_conf)
+    print('Model configuration: \n', cfg)
 
     # dataset and evaluator
     dataset, evaluator, num_classes = build_dataset(args, cfg, device)
