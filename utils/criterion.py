@@ -29,12 +29,16 @@ class FocalWithLogitsLoss(nn.Module):
 
         if self.reduction == "mean":
             pos_inds = (targets == 1.0).float()
+            # scale loss by number of positive samples of each sample and batch size
             # [B, HW, C] -> [B,]
+            batch_size = logits.size(0)
             num_pos = pos_inds.sum([1, 2]).clamp(1.0)
-
-            # [B, HW, C] -> [B,]
             loss = loss.sum([1, 2]) / num_pos
-            loss = loss.sum()
+            loss = loss.sum() / batch_size
+
+            # scale loss by number of total positive samples
+            # num_pos = pos_inds.sum()
+            # loss = loss.sum() / num_pos
 
         elif self.reduction == "sum":
             loss = loss.sum()
@@ -83,9 +87,17 @@ class Criterion(nn.Module):
         # [B x HW,] -> [B, HW,]
         pred_giou = pred_giou.view(B, HW)
         loss_reg = 1. - pred_giou if mask is None else (1. - pred_giou) * mask
+        loss_reg = loss_reg * target_pos
 
-        loss_reg = (loss_reg * target_pos).sum(-1) / num_pos
-        loss_reg = loss_reg.sum()
+        # scale loss by number of positive samples of each sample and batch size
+        # [B, HW,] -> [B,]
+        batch_size = pred_box.size(0)
+        loss_reg = loss_reg.sum(-1) / num_pos
+        loss_reg = loss_reg.sum() / batch_size
+
+        # scale loss by number of total positive samples
+        # num_pos = target_pos.sum()
+        # loss_reg = loss_reg.sum() / num_pos
         
         return loss_reg
 
@@ -102,10 +114,18 @@ class Criterion(nn.Module):
         # [B x HW,] -> [B, HW,]
         loss_ctn = self.ctn_loss_f(pred_ctn[..., 0], target_ctn)
         loss_ctn = loss_ctn if mask is None else loss_ctn * mask
+        loss_ctn = loss_ctn * target_pos
 
-        loss_ctn = (loss_ctn * target_pos).sum(-1) / num_pos
-        loss_ctn = loss_ctn.sum()
+        # scale loss by number of positive samples of each sample and batch size
+        # [B, HW,] -> [B,]
+        batch_size = pred_ctn.size(0)
+        loss_ctn = loss_ctn.sum(-1) / num_pos
+        loss_ctn = loss_ctn.sum() / batch_size
         
+        # scale loss by number of total positive samples
+        # num_pos = target_pos.sum()
+        # loss_ctn = loss_ctn.sum() / num_pos
+
         return loss_ctn
 
 
@@ -137,15 +157,12 @@ class Criterion(nn.Module):
 
         # compute class loss
         loss_labels = self.loss_labels(outputs["pred_cls"], targets, outputs["masks"])
-        loss_labels /= batch_size
 
         # compute bboxes loss
         loss_bboxes = self.loss_bboxes(outputs["pred_box"], targets, outputs["masks"])
-        loss_bboxes /= batch_size
 
         # compute centerness loss
         loss_centerness = self.loss_centerness(outputs["pred_ctn"], targets, outputs["masks"])
-        loss_centerness /= batch_size
 
         # total loss
         losses = self.loss_cls_weight * loss_labels + \
