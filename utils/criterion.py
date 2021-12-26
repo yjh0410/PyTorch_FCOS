@@ -31,14 +31,14 @@ class FocalWithLogitsLoss(nn.Module):
             pos_inds = (targets == 1.0).float()
             # scale loss by number of positive samples of each sample and batch size
             # [B, HW, C] -> [B,]
-            batch_size = logits.size(0)
-            num_pos = pos_inds.sum([1, 2]).clamp(1.0)
-            loss = loss.sum([1, 2]) / num_pos
-            loss = loss.sum() / batch_size
+            # batch_size = logits.size(0)
+            # num_pos = pos_inds.sum([1, 2]).clamp(1.0)
+            # loss = loss.sum([1, 2]) / num_pos
+            # loss = loss.sum() / batch_size
 
             # scale loss by number of total positive samples
-            # num_pos = pos_inds.sum()
-            # loss = loss.sum() / num_pos
+            num_pos = pos_inds.sum()
+            loss = loss.sum() / num_pos
 
         elif self.reduction == "sum":
             loss = loss.sum()
@@ -91,13 +91,13 @@ class Criterion(nn.Module):
 
         # scale loss by number of positive samples of each sample and batch size
         # [B, HW,] -> [B,]
-        batch_size = pred_box.size(0)
-        loss_reg = loss_reg.sum(-1) / num_pos
-        loss_reg = loss_reg.sum() / batch_size
+        # batch_size = pred_box.size(0)
+        # loss_reg = loss_reg.sum(-1) / num_pos
+        # loss_reg = loss_reg.sum() / batch_size
 
         # scale loss by number of total positive samples
-        # num_pos = target_pos.sum()
-        # loss_reg = loss_reg.sum() / num_pos
+        num_pos = target_pos.sum()
+        loss_reg = loss_reg.sum() / num_pos
         
         return loss_reg
 
@@ -118,13 +118,13 @@ class Criterion(nn.Module):
 
         # scale loss by number of positive samples of each sample and batch size
         # [B, HW,] -> [B,]
-        batch_size = pred_ctn.size(0)
-        loss_ctn = loss_ctn.sum(-1) / num_pos
-        loss_ctn = loss_ctn.sum() / batch_size
+        # batch_size = pred_ctn.size(0)
+        # loss_ctn = loss_ctn.sum(-1) / num_pos
+        # loss_ctn = loss_ctn.sum() / batch_size
         
         # scale loss by number of total positive samples
-        # num_pos = target_pos.sum()
-        # loss_ctn = loss_ctn.sum() / num_pos
+        num_pos = target_pos.sum()
+        loss_ctn = loss_ctn.sum() / num_pos
 
         return loss_ctn
 
@@ -140,7 +140,6 @@ class Criterion(nn.Module):
             images: (tensor) [B, 3, H, W]
             vis_labels: (bool) visualize labels to check positive samples
         """
-        batch_size = outputs["pred_cls"].size(0)
         # make labels
         targets = label_creator(targets=targets, 
                                 num_classes=self.num_classes,
